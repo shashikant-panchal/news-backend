@@ -25,6 +25,10 @@ const interactionSchema = new mongoose.Schema({
 
 const Interaction = mongoose.model("Interaction", interactionSchema);
 
+app.get("/", (req, res) => {
+  res.send("News is live");
+});
+
 app.post("/like", async (req, res) => {
   const { articleId } = req.body;
   if (!articleId)
