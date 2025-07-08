@@ -38,7 +38,9 @@ app.get("/", (req, res) => {
 app.post("/like", async (req, res) => {
   const { articleId, articleBody } = req.body;
   if (!articleId || !articleBody) {
-    return res.status(400).json({ error: "articleId and articleBody are required" });
+    return res
+      .status(400)
+      .json({ error: "articleId and articleBody are required" });
   }
 
   try {
@@ -50,7 +52,7 @@ app.post("/like", async (req, res) => {
       interaction = new Interaction({ articleId, articleBody, liked: true });
     }
 
-    console.log(interaction)
+    console.log(interaction);
 
     await interaction.save();
     res.json({ message: "Like status updated", liked: interaction.liked });
@@ -64,7 +66,9 @@ app.post("/like", async (req, res) => {
 app.post("/bookmark", async (req, res) => {
   const { articleId, articleBody } = req.body;
   if (!articleId || !articleBody) {
-    return res.status(400).json({ error: "articleId and articleBody are required" });
+    return res
+      .status(400)
+      .json({ error: "articleId and articleBody are required" });
   }
 
   try {
@@ -73,7 +77,11 @@ app.post("/bookmark", async (req, res) => {
     if (interaction) {
       interaction.bookmarked = !interaction.bookmarked;
     } else {
-      interaction = new Interaction({ articleId, articleBody, bookmarked: true });
+      interaction = new Interaction({
+        articleId,
+        articleBody,
+        bookmarked: true,
+      });
     }
 
     await interaction.save();
@@ -100,5 +108,5 @@ app.get("/interactions", async (req, res) => {
 
 // Start Server
 app.listen(PORT, () => {
-  console.log(Server running on http://localhost:${PORT});
+  console.log(`Server running on http://localhost:${PORT}`);
 });
