@@ -105,7 +105,7 @@ const fetchNews = async () => {
   }
 };
 
-setInterval(fetchNews, 5000);
+setInterval(fetchNews, 3000);
 
 app.get("/news", (req, res) => {
   res.json(fetchedNews);
