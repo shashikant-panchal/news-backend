@@ -16,7 +16,16 @@ mongoose.connect("mongodb+srv://news:news@news.ypivkzn.mongodb.net/", {
 });
 
 // MongoDB models
+// const interactionSchema = new mongoose.Schema({
+//   articalBody:{type:Object, required:true},
+//   articleId: { type: String, required: true },
+//   liked: { type: Boolean, default: false },
+//   bookmarked: { type: Boolean, default: false },
+//   timestamp: { type: Date, default: Date.now },
+// });
+
 const interactionSchema = new mongoose.Schema({
+  articleBody: { type: mongoose.Schema.Types.Mixed, required: true }, 
   articleId: { type: String, required: true },
   liked: { type: Boolean, default: false },
   bookmarked: { type: Boolean, default: false },
@@ -30,7 +39,7 @@ app.get("/", (req, res) => {
 });
 
 app.post("/like", async (req, res) => {
-  const { articleId } = req.body;
+  const { articleId, articalBody } = req.body;
   if (!articleId)
     return res.status(400).json({ error: "articleId is required" });
 
@@ -51,7 +60,7 @@ app.post("/like", async (req, res) => {
 });
 
 app.post("/bookmark", async (req, res) => {
-  const { articleId } = req.body;
+  const { articleId, articalBody } = req.body;
   if (!articleId)
     return res.status(400).json({ error: "articleId is required" });
 
