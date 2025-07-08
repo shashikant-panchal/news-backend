@@ -51,6 +51,8 @@ app.post("/like", async (req, res) => {
       interaction = new Interaction({ articleId, articleBody, liked: true });
     }
 
+    console.log(interaction)
+
     await interaction.save();
     res.json({ message: "Like status updated", liked: interaction.liked });
   } catch (error) {
