@@ -1,9 +1,7 @@
-// index.js
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const axios = require("axios");
 
 const app = express();
 const PORT = 3000;
@@ -11,13 +9,18 @@ const PORT = 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-mongoose.connect("mongodb+srv://news:news@news.ypivkzn.mongodb.net/", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+// MongoDB connection
+mongoose
+  .connect("mongodb+srv://news:news@news.ypivkzn.mongodb.net/", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
-// MongoDB models
+// Interaction Schema
 const interactionSchema = new mongoose.Schema({
+  articleBody: { type: mongoose.Schema.Types.Mixed, required: true },
   articleId: { type: String, required: true },
   liked: { type: Boolean, default: false },
   bookmarked: { type: Boolean, default: false },
@@ -26,14 +29,17 @@ const interactionSchema = new mongoose.Schema({
 
 const Interaction = mongoose.model("Interaction", interactionSchema);
 
+// Default Route
 app.get("/", (req, res) => {
   res.send("News is live");
 });
 
+// Like Endpoint
 app.post("/like", async (req, res) => {
-  const { articleId } = req.body;
-  if (!articleId)
-    return res.status(400).json({ error: "articleId is required" });
+  const { articleId, articleBody } = req.body;
+  if (!articleId || !articleBody) {
+    return res.status(400).json({ error: "articleId and articleBody are required" });
+  }
 
   try {
     let interaction = await Interaction.findOne({ articleId });
@@ -41,20 +47,25 @@ app.post("/like", async (req, res) => {
     if (interaction) {
       interaction.liked = !interaction.liked;
     } else {
-      interaction = new Interaction({ articleId, liked: true });
+      interaction = new Interaction({ articleId, articleBody, liked: true });
     }
+
+    console.log(interaction)
 
     await interaction.save();
     res.json({ message: "Like status updated", liked: interaction.liked });
   } catch (error) {
-    res.status(500).json({ error: "Failed to like the post" });
+    console.error("Error liking article:", error);
+    res.status(500).json({ error: "Failed to like the article" });
   }
 });
 
+// Bookmark Endpoint
 app.post("/bookmark", async (req, res) => {
-  const { articleId } = req.body;
-  if (!articleId)
-    return res.status(400).json({ error: "articleId is required" });
+  const { articleId, articleBody } = req.body;
+  if (!articleId || !articleBody) {
+    return res.status(400).json({ error: "articleId and articleBody are required" });
+  }
 
   try {
     let interaction = await Interaction.findOne({ articleId });
@@ -62,7 +73,7 @@ app.post("/bookmark", async (req, res) => {
     if (interaction) {
       interaction.bookmarked = !interaction.bookmarked;
     } else {
-      interaction = new Interaction({ articleId, bookmarked: true });
+      interaction = new Interaction({ articleId, articleBody, bookmarked: true });
     }
 
     await interaction.save();
@@ -71,46 +82,23 @@ app.post("/bookmark", async (req, res) => {
       bookmarked: interaction.bookmarked,
     });
   } catch (error) {
-    res.status(500).json({ error: "Failed to bookmark the post" });
+    console.error("Error bookmarking article:", error);
+    res.status(500).json({ error: "Failed to bookmark the article" });
   }
 });
 
+// Get All Interactions
 app.get("/interactions", async (req, res) => {
-  const interactions = await Interaction.find();
-  res.json(interactions);
-});
-
-let fetchedNews = [];
-let nextPageToken = null;
-
-const API_KEY = "pub_47653636dfdf49e78fd75a7b56b46a07";
-
-const fetchNews = async () => {
   try {
-    const url = `https://newsdata.io/api/1/latest?apikey=${API_KEY}&country=in${
-      nextPageToken ? `&page=${nextPageToken}` : ""
-    }`;
-
-    const response = await axios.get(url);
-    const data = response.data;
-console.log('data======>',data)
-    if (data.results) {
-      fetchedNews.push(...data.results);
-    }
-
-    nextPageToken = data.nextPage;
-    console.log(`Fetched ${data.results?.length || 0} news articles.`);
+    const interactions = await Interaction.find();
+    res.json(interactions);
   } catch (error) {
-    console.error("Error fetching news:", error.message);
+    console.error("Error fetching interactions:", error);
+    res.status(500).json({ error: "Failed to fetch interactions" });
   }
-};
-
-setInterval(fetchNews, 3000);
-
-app.get("/news", (req, res) => {
-  res.json(fetchedNews);
 });
 
+// Start Server
 app.listen(PORT, () => {
-  console.log(`Server running on ${PORT}`);
+  console.log(Server running on http://localhost:${PORT});
 });
