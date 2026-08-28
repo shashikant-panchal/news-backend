@@ -2,6 +2,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const { ApolloServer } = require("@apollo/server");
+const { expressMiddleware } = require("@apollo/server/express4");
 
 const app = express();
 const PORT = 3000;
@@ -29,12 +31,100 @@ const interactionSchema = new mongoose.Schema({
 
 const Interaction = mongoose.model("Interaction", interactionSchema);
 
-// Default Route
+// GraphQL Schema (typeDefs)
+const typeDefs = `#graphql
+  type Interaction {
+    id: ID!
+    articleId: String!
+    articleBody: String
+    liked: Boolean!
+    bookmarked: Boolean!
+    timestamp: String
+  }
+
+  type Query {
+    # Fetch all article interactions
+    interactions: [Interaction!]!
+    # Fetch interaction for a specific article
+    interaction(articleId: String!): Interaction
+  }
+
+  type Mutation {
+    # Toggle like status for an article
+    toggleLike(articleId: String!, articleBody: String): Interaction
+    # Toggle bookmark status for an article
+    toggleBookmark(articleId: String!, articleBody: String): Interaction
+  }
+`;
+
+// GraphQL Resolvers
+const resolvers = {
+  Query: {
+    interactions: async () => {
+      try {
+        return await Interaction.find();
+      } catch (error) {
+        console.error("GraphQL Error fetching interactions:", error);
+        throw new Error("Failed to fetch interactions");
+      }
+    },
+    interaction: async (_, { articleId }) => {
+      try {
+        return await Interaction.findOne({ articleId });
+      } catch (error) {
+        console.error("GraphQL Error fetching interaction:", error);
+        throw new Error("Failed to fetch interaction");
+      }
+    },
+  },
+  Mutation: {
+    toggleLike: async (_, { articleId, articleBody }) => {
+      try {
+        let interaction = await Interaction.findOne({ articleId });
+        if (interaction) {
+          interaction.liked = !interaction.liked;
+        } else {
+          interaction = new Interaction({
+            articleId,
+            articleBody: articleBody || "Default body",
+            liked: true,
+          });
+        }
+        await interaction.save();
+        return interaction;
+      } catch (error) {
+        console.error("GraphQL Error toggling like:", error);
+        throw new Error("Failed to toggle like status");
+      }
+    },
+    toggleBookmark: async (_, { articleId, articleBody }) => {
+      try {
+        let interaction = await Interaction.findOne({ articleId });
+        if (interaction) {
+          interaction.bookmarked = !interaction.bookmarked;
+        } else {
+          interaction = new Interaction({
+            articleId,
+            articleBody: articleBody || "Default body",
+            bookmarked: true,
+          });
+        }
+        await interaction.save();
+        return interaction;
+      } catch (error) {
+        console.error("GraphQL Error toggling bookmark:", error);
+        throw new Error("Failed to toggle bookmark status");
+      }
+    },
+  },
+};
+
+// REST Default Route
 app.get("/", (req, res) => {
   res.send("News is live");
 });
 
-// Like Endpoint
+// REST Like Endpoint
 app.post("/like", async (req, res) => {
   const { articleId, articleBody } = req.body;
   if (!articleId || !articleBody) {
@@ -62,7 +152,7 @@ app.post("/like", async (req, res) => {
   }
 });
 
-// Bookmark Endpoint
+// REST Bookmark Endpoint
 app.post("/bookmark", async (req, res) => {
   const { articleId, articleBody } = req.body;
   if (!articleId || !articleBody) {
@@ -95,7 +185,7 @@ app.post("/bookmark", async (req, res) => {
   }
 });
 
-// Get All Interactions
+// REST Get All Interactions
 app.get("/interactions", async (req, res) => {
   try {
     const interactions = await Interaction.find();
@@ -106,7 +196,22 @@ app.get("/interactions", async (req, res) => {
   }
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+// Initialize Apollo Server and start Express
+async function startServer() {
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+  });
+
+  await server.start();
+
+  app.use("/graphql", expressMiddleware(server));
+
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`GraphQL endpoint available at http://localhost:${PORT}/graphql`);
+  });
+}
+
+startServer();
+
