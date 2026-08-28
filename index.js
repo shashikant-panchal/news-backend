@@ -205,6 +205,10 @@ async function startServer() {
 
   await server.start();
 
+  app.use("/graphql", (req, res, next) => {
+    req.body = req.body || {};
+    next();
+  });
   app.use("/graphql", expressMiddleware(server));
 
   app.listen(PORT, () => {
