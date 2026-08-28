@@ -10,6 +10,10 @@ const PORT = 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use((req, res, next) => {
+  req.body = req.body || {};
+  next();
+});
 
 // MongoDB connection
 mongoose
@@ -218,4 +222,6 @@ async function startServer() {
 }
 
 startServer();
+
+module.exports = app;
 
